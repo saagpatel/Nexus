@@ -1,288 +1,207 @@
 # Nexus
 
-A modern, intelligent API client built with Electron, Vue 3, and TypeScript. Nexus combines powerful API testing capabilities with intelligent discovery features to streamline your API development workflow.
+Nexus is a desktop API client for people who want more than a plain request form.
+It combines fast HTTP testing, GraphQL workflows, WebSocket inspection, local mocking, response assertions, and collection execution in a single Electron app built for real development loops.
 
-![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)
 ![License](https://img.shields.io/badge/license-MIT-blue)
+![Desktop](https://img.shields.io/badge/desktop-Electron%20%2B%20Vue-2d6cdf)
+![Status](https://img.shields.io/badge/status-active%20local%20desktop%20app-1f9d55)
+![Release](https://img.shields.io/badge/release%20target-macOS%20first-lightgrey)
 
-## Features
+## Why Nexus
 
-### 🚀 Core API Client
+Most API tools are great at sending a request, but they get awkward when your workflow crosses protocol boundaries or when you want to validate behavior instead of just eyeballing a response.
 
-- **HTTP Methods**: Full support for GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS
-- **Request Building**: Comprehensive editor for headers, query parameters, and body (JSON/Text/Form-urlencoded/GraphQL)
-- **Authentication**: Built-in support for Basic and Bearer token auth
-- **Response Viewer**: Formatted body display, headers inspection, timing metrics
-- **Monaco Editor**: Syntax-highlighted editing with auto-formatting
+Nexus is designed for that next layer of work:
 
-### 🔌 Advanced Protocol Workflows
+- Build and replay HTTP requests quickly
+- Run GraphQL queries with variables and operation names
+- Open WebSocket sessions and inspect live message timelines
+- Spin up a local mock server and watch captured traffic
+- Assert on responses instead of checking them manually
+- Run collections sequentially with basic chaining between steps
+- Generate cURL, `fetch`, and Axios snippets from the current request
 
-- **GraphQL Support**: Query, variables, and operation name editing with proper request payload generation
-- **WebSocket Testing**: Connect, disconnect, send messages, and inspect a live event timeline
-- **Local Mock Server**: Define local routes, run a localhost mock server, and inspect captured request traffic
-- **Code Generation**: Export the current request as cURL, `fetch`, or Axios snippets
-- **Response Assertions**: Verify status, headers, and body content
-- **Collection Runner**: Execute saved request groups sequentially with stop-on-failure behavior
-- **Request Chaining**: Reuse basic `last_*` values from earlier runner steps
+It is especially useful for developers who want one desktop workspace for exploring, testing, iterating, and documenting API behavior.
 
-### 📁 Collections & Organization
+## Current Stage
 
-- **Hierarchical Collections**: Organize requests in nested folders
-- **Drag & Drop** (planned): Reorder collections and requests
-- **Smart Tree View**: Expandable/collapsable collection tree with inline rename
-- **Import/Export**: Import Postman Collection v2.1 JSON files
+Nexus is no longer just an early prototype. The project now has:
 
-### 🌍 Environment Management
+- a working desktop app with the core HTTP, GraphQL, WebSocket, mock-server, assertions, and collection-runner flows in place
+- local persistence through SQLite for workspaces, collections, requests, environments, and history
+- runtime-hardened IPC boundaries and Electron safety controls for the trusted app surface
+- automated verification across typecheck, unit/component tests, Electron smoke coverage, and packaging/release dry-runs
+- a macOS-first release path validated through dry-run packaging and release evidence generation
 
-- **Multiple Environments**: Create unlimited environments (Dev, Staging, Prod, etc.)
-- **Variable System**: Define variables per environment with `{{variable}}` syntax
-- **Secure Variables**: Mark sensitive variables as secrets (masked in UI)
-- **Active Environment**: Switch environments with a single click
-- **Variable Highlighting**: Visual indicators for variables in Monaco editor
+Current release note:
 
-### 🔍 API Discovery
+- local and dry-run release readiness are in strong shape
+- Apple signing and notarization are intentionally deferred for later credential setup
+- team collaboration and cloud sync remain intentionally out of scope for the current release target
 
-- **Automatic Spec Detection**: Probes common OpenAPI/Swagger spec locations
-- **Smart Parsing**: Extracts endpoints from OpenAPI 3.x and Swagger 2.0 specs
-- **Real-time Progress**: Visual progress stepper during discovery
-- **One-Click Import**: Generate complete collections from discovered APIs
-- **Endpoint Browser**: Browse discovered endpoints by tag/category
+## What You Can Do Today
 
-### 📊 Request History
+### Core request work
 
-- **Automatic Tracking**: All requests saved to history automatically
-- **Advanced Filtering**: Filter by method, status code, or URL pattern
-- **Quick Replay**: Click any history entry to reload and resend
-- **Chronological View**: Recent requests sorted by execution time
+- Send `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, and `OPTIONS` requests
+- Edit headers, query parameters, and request bodies with Monaco-powered editing
+- Use JSON, plain text, form-urlencoded, and GraphQL request bodies
+- Authenticate with Basic auth or Bearer tokens
+- Inspect formatted responses, headers, and timing data
 
-### ⚡ Performance & UX
+### Advanced API workflows
 
-- **Fast & Native**: Built on Electron for native performance
-- **Keyboard Shortcuts**:
-  - `Cmd+Enter`: Send request
-  - `Cmd+S`: Save request
-  - `Cmd+N`: New request
-  - `Cmd+L`: Focus URL bar
-  - `Esc`: Cancel in-flight HTTP request or disconnect an active WebSocket session
-- **Instant Startup**: SQLite database with optimized indexes
-- **Responsive UI**: Tailwind CSS 4 with custom dark theme
+- Build GraphQL requests with query, variables, and operation name support
+- Connect to WebSocket endpoints, send messages, and inspect a live event timeline
+- Start a local mock server, define routes, and review captured mock traffic
+- Create response assertions for status, headers, and body content
+- Run collections sequentially with stop-on-failure behavior
+- Reuse basic `last_*` values between collection-runner steps
+- Generate cURL, `fetch`, and Axios code snippets from the active request
 
-## Tech Stack
+### Project organization
 
-- **Frontend**: Vue 3.5, Pinia 3, Tailwind CSS 4, Radix Vue
-- **Backend**: Electron 40, Node.js
-- **Database**: better-sqlite3 (local SQLite)
-- **HTTP Client**: undici (high-performance HTTP)
-- **Code Editor**: Monaco Editor
-- **Build**: Vite, TypeScript, Electron Forge
-- **Testing**: Vitest, Vue Test Utils (124 tests)
+- Save requests into hierarchical collections
+- Manage multiple environments with `{{variable}}` substitution
+- Mark sensitive environment values as secrets in the UI
+- Track request history and replay previous requests quickly
+- Import Postman Collection v2.1 JSON files
+- Discover OpenAPI and Swagger endpoints from common spec locations
 
-## Architecture
+## Why Someone Should Try It
 
-### Type-Safe IPC
+Nexus is appealing if you want an API client that feels closer to a real desktop workbench than a simple tabbed request tool.
 
-Nexus uses a type-safe IPC bridge between the main and renderer processes:
+It is a strong fit if you want:
 
-```typescript
-// shared/ipc-channels.ts defines the contract
-export interface IpcChannelMap {
-  "http:execute": { args: HttpRequest; return: IpcResult<HttpResponse> };
-  "db:request:save": { args: SavedRequest; return: IpcResult<SavedRequest> };
-  // ... all channels type-checked
-}
+- one app for HTTP plus adjacent protocol workflows
+- a local-first tool with no cloud account requirement
+- a persistent request workspace instead of disposable tabs
+- built-in validation and runner behavior without jumping into code first
+- a modern Electron/Vue codebase that is already well past the sketch stage
 
-// Renderer invokes with full type safety
-const result = await window.api.invoke("http:execute", httpRequest);
-```
-
-The IPC boundary is also runtime-hardened:
-
-- Main-process handlers validate payload shape before invoking privileged services.
-- Preload event subscriptions are limited to an explicit allowlist.
-- Renderer trust is restricted to the configured dev server or packaged renderer entry.
-- Navigation, popup creation, and webview attachment are denied outside the trusted app surface.
-
-### Database Schema
-
-- **workspaces**: Project workspaces with base URLs
-- **collections**: Hierarchical folders (recursive parent_id)
-- **requests**: Saved API requests with full configuration
-- **request_history**: Execution log with request/response snapshots
-- **environments**: Named environment contexts
-- **env_variables**: Key-value pairs per environment
-- **discovered_endpoints**: API discovery cache
-
-### Variable Resolution
-
-Variables are resolved at send-time in the main process:
-
-```typescript
-// In renderer: {{base_url}}/users
-// In main: Resolves to https://api.example.com/users
-```
-
-This keeps secrets (like API keys) in the main process, never exposing them to the renderer.
-
-## Development
+## Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ with pnpm
+- Node.js 18+
+- `pnpm`
 - Git
 
-### Setup
+### Install and run
 
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/Nexus.git
+git clone https://github.com/saagar210/Nexus.git
 cd Nexus
-
-# Install dependencies
 pnpm install
+pnpm start
+```
 
-# Start development server
+### Useful commands
+
+```bash
+# Standard development mode
 pnpm start
 
-# Start development server in low-disk "lean dev" mode
+# Low-disk development mode with ephemeral Vite cache
 pnpm lean:start
 
-# Run tests
+# Type safety
+pnpm typecheck
+
+# Unit and component tests
 pnpm test
 
-# Run the desktop smoke test
+# Electron desktop smoke test
 pnpm test:e2e:smoke
 
-# Build for production
+# Package the app locally
 pnpm package
+
+# Full macOS release dry-run without signing/notarization
+pnpm release:mac:dry-run
 ```
 
-### Dev Modes
+## Verification Snapshot
 
-#### Normal Dev
+Current verification coverage includes:
 
-```bash
-pnpm start
-```
+- `pnpm typecheck`
+- `pnpm test`
+- `pnpm test:e2e:smoke`
+- `.codex/scripts/run_verify_commands.sh`
+- `pnpm package`
+- `pnpm release:mac:dry-run`
 
-- Fastest incremental startup after the first run.
-- Keeps build artifacts in the repo (for example `.vite/`) until you clean them.
+Recent local verification evidence from the implementation pass:
 
-#### Lean Dev (low disk)
+- 124 automated tests passing
+- desktop smoke path passing
+- package flow passing
+- macOS dry-run release path producing manifest, checksums, and go/no-go evidence
 
-```bash
-pnpm lean:start
-```
+## Security and Architecture Notes
 
-- Starts the app with an ephemeral Vite cache directory in your system temp folder.
-- Automatically cleans heavy build artifacts (`.vite/`, `out/`, `dist/`, `.webpack/`) when the app exits.
-- Tradeoff: slightly slower startup on each run because caches are not reused across sessions.
+Nexus uses a typed IPC contract between the Electron renderer and main process, and the boundary is not trusted blindly.
 
-### Cleanup Commands
+Current protections include:
 
-```bash
-# Remove heavy build artifacts only (safe daily cleanup)
-pnpm clean:heavy
+- runtime IPC payload validation for privileged main-process handlers
+- preload event subscription allowlisting
+- trusted renderer origin checks
+- navigation and popup denial outside the intended app surface
+- renderer sandbox enablement and tighter Electron surface controls
 
-# Remove all reproducible local caches (larger reset, slower next startup)
-pnpm clean:full
-```
+Local secrets are resolved in the main process so environment variables and sensitive request material do not need to be handled directly inside renderer UI logic.
 
-- `clean:heavy` preserves dependencies to keep regular startup speed reasonable.
-- `clean:full` also removes `node_modules/` and other reproducible caches, which frees more disk but requires reinstalling dependencies.
+## Stack
 
-### Project Structure
+- Electron 40
+- Vue 3
+- TypeScript
+- Pinia
+- Tailwind CSS 4
+- Monaco Editor
+- SQLite via `better-sqlite3`
+- `undici` for HTTP execution
+- `ws` for WebSocket workflows
+- Vitest + Vue Test Utils + Playwright Electron smoke coverage
+- Electron Forge + Vite
 
-```
+## Project Layout
+
+```text
 Nexus/
-├── electron/
-│   ├── main/                  # Main process
-│   │   ├── database/         # SQLite + migrations
-│   │   ├── ipc/              # IPC handlers
-│   │   └── services/         # Business logic
-│   └── preload/              # Preload script (IPC bridge)
-├── src/                       # Renderer process (Vue)
-│   ├── components/
-│   │   ├── collection/       # Collection tree
-│   │   ├── discovery/        # API discovery UI
-│   │   ├── environment/      # Environment switcher
-│   │   ├── history/          # History panel
-│   │   ├── layout/           # App shell
-│   │   ├── request/          # Request editor
-│   │   ├── response/         # Response viewer
-│   │   └── ui/               # Shared UI components
-│   ├── composables/          # Vue composables
-│   ├── stores/               # Pinia stores
-│   └── styles/               # Global CSS
-├── shared/                    # Shared types between main/renderer
-└── tests/                     # Test suite (84 tests)
+├── electron/                  # Main process, preload bridge, and desktop services
+├── src/                       # Vue renderer, stores, and UI
+├── shared/                    # Shared IPC contracts and types
+├── tests/                     # Unit, component, shared, and Electron smoke coverage
+├── docs/                      # Execution and release notes
+└── scripts/                   # Build, release, perf, and repo guardrail scripts
 ```
 
-## Roadmap
+## Roadmap From Here
 
-### Phase 1 ✅ Complete
+The biggest remaining release step is operational rather than product-functional:
 
-- [x] HTTP client with all methods
-- [x] Request/response editors
-- [x] Monaco integration
-- [x] Persistence layer
-- [x] Test suite (43 tests)
+- Apple signing and notarization setup for a fully production-ready macOS release
 
-### Phase 2+3 ✅ Complete
+Explicitly deferred for now:
 
-- [x] Hierarchical collections
-- [x] Environment management with variables
-- [x] Variable resolution system
-- [x] Request history with filtering
-- [x] API discovery engine
-- [x] Postman collection import
-- [x] Comprehensive test coverage (84 tests)
-
-### Phase 4 🔜 Planned
-
-- [x] GraphQL support (query, variables, operation name)
-- [x] WebSocket testing
-- [x] Mock server
-- [x] Request chaining/scripting (basic `last_*` variable extraction in collection runner)
-- [x] Code generation (cURL, fetch, axios)
-- [x] Response assertions
-- [x] Collection runner (sequential + stop-on-failure option)
-- [ ] Team collaboration features (deferred)
-- [ ] Cloud sync (deferred)
-
-## Testing
-
-Nexus has comprehensive test coverage:
-
-```bash
-pnpm test
-```
-
-- **124 automated tests** across unit, component, shared-security, and Electron helper coverage
-- **1 Playwright Electron smoke test** covering app boot, mode switching, and mock-server traffic
-- Unit tests for stores, services, and database
-- Component tests for UI elements and workspace mode switching
-- Browser-backed desktop smoke coverage for the compiled Electron app
-- Shared/runtime validation tests for the IPC trust boundary
-- Fixtures for Postman collections and OpenAPI specs
+- team collaboration features
+- cloud sync and shared remote workspaces
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+If you want to explore the project locally, the best path is:
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'feat: add some amazing feature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+1. install dependencies with `pnpm install`
+2. run the app with `pnpm start`
+3. validate changes with `bash .codex/scripts/run_verify_commands.sh`
+
+The repository also includes branch, commit, secret-scan, and performance guardrails to keep changes disciplined as the app moves toward a fuller release.
 
 ## License
 
-MIT License - see LICENSE file for details
-
-## Acknowledgments
-
-Built with Claude Code - Anthropic's official CLI for Claude.
-
----
-
-**Note**: Nexus is under active development. Features and APIs may change.
+MIT
