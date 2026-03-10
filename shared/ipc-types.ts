@@ -1,133 +1,225 @@
 export type IpcResult<T> =
   | { success: true; data: T }
-  | { success: false; error: string }
+  | { success: false; error: string };
 
 export interface HttpRequest {
-  method: string
-  url: string
-  headers: Record<string, string>
-  body?: string
-  timeout?: number
-  variables?: Record<string, string>
+  method: string;
+  url: string;
+  headers: Record<string, string>;
+  body?: string;
+  timeout?: number;
+  variables?: Record<string, string>;
 }
 
 export interface HttpResponse {
-  statusCode: number
-  statusText: string
-  headers: Record<string, string>
-  body: string
-  size: number
-  timing: RequestTiming
-  isTruncated: boolean
+  statusCode: number;
+  statusText: string;
+  headers: Record<string, string>;
+  body: string;
+  size: number;
+  timing: RequestTiming;
+  isTruncated: boolean;
 }
 
 export interface RequestTiming {
-  startTime: number
-  dnsTime: number
-  connectTime: number
-  tlsTime: number
-  firstByteTime: number
-  totalTime: number
+  startTime: number;
+  dnsTime: number;
+  connectTime: number;
+  tlsTime: number;
+  firstByteTime: number;
+  totalTime: number;
 }
 
 export interface SavedRequest {
-  id: string
-  collectionId: string | null
-  workspaceId: string
-  name: string
-  method: string
-  url: string
-  headers: Array<{ key: string; value: string; enabled: boolean }>
-  queryParams: Array<{ key: string; value: string; enabled: boolean }>
-  bodyType: 'none' | 'json' | 'text' | 'form-urlencoded' | null
-  bodyContent: string | null
-  authType: 'none' | 'basic' | 'bearer' | null
-  authConfig: Record<string, string> | null
-  sortOrder: number
-  createdAt: string
-  updatedAt: string
+  id: string;
+  collectionId: string | null;
+  workspaceId: string;
+  name: string;
+  method: string;
+  url: string;
+  headers: Array<{ key: string; value: string; enabled: boolean }>;
+  queryParams: Array<{ key: string; value: string; enabled: boolean }>;
+  bodyType: "none" | "json" | "text" | "form-urlencoded" | "graphql" | null;
+  bodyContent: string | null;
+  authType: "none" | "basic" | "bearer" | null;
+  authConfig: Record<string, string> | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CollectionRunRequest {
+  workspaceId: string;
+  collectionId: string;
+  stopOnFailure?: boolean;
+}
+
+export interface CollectionRunItemResult {
+  requestId: string;
+  requestName: string;
+  status: "pass" | "fail";
+  statusCode: number | null;
+  error: string | null;
+  durationMs: number;
+}
+
+export interface CollectionRunResult {
+  total: number;
+  passed: number;
+  failed: number;
+  durationMs: number;
+  results: CollectionRunItemResult[];
+}
+
+export interface WebSocketConnectRequest {
+  url: string;
+  headers: Record<string, string>;
+  protocols?: string[];
+  variables?: Record<string, string>;
+}
+
+export type WebSocketConnectionStatus =
+  | "disconnected"
+  | "connecting"
+  | "connected"
+  | "error";
+
+export interface WebSocketSendRequest {
+  message: string;
+}
+
+export interface WebSocketState {
+  status: WebSocketConnectionStatus;
+  url: string | null;
+  lastError: string | null;
+}
+
+export interface WebSocketEvent {
+  id: string;
+  type:
+    | "connecting"
+    | "connected"
+    | "message"
+    | "sent"
+    | "error"
+    | "disconnected";
+  text: string;
+  timestamp: string;
+}
+
+export interface MockRoute {
+  id: string;
+  method: string;
+  path: string;
+  statusCode: number;
+  headers: Array<{ key: string; value: string; enabled: boolean }>;
+  body: string;
+  enabled: boolean;
+}
+
+export interface MockRequestLogEntry {
+  id: string;
+  method: string;
+  path: string;
+  matchedRouteId: string | null;
+  statusCode: number;
+  requestBody: string;
+  timestamp: string;
+}
+
+export interface MockServerState {
+  running: boolean;
+  port: number | null;
+  baseUrl: string | null;
+  routes: MockRoute[];
+  requestLog: MockRequestLogEntry[];
+}
+
+export interface MockServerConfig {
+  port?: number | null;
+  routes: MockRoute[];
 }
 
 export interface Workspace {
-  id: string
-  name: string
-  description: string | null
-  baseUrl: string | null
-  createdAt: string
-  updatedAt: string
+  id: string;
+  name: string;
+  description: string | null;
+  baseUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface HistoryEntry {
-  id: string
-  requestId: string | null
-  workspaceId: string
-  method: string
-  url: string
-  requestHeaders: string | null
-  requestBody: string | null
-  statusCode: number | null
-  responseHeaders: string | null
-  responseBody: string | null
-  responseSizeBytes: number | null
-  responseTimeMs: number | null
-  errorMessage: string | null
-  executedAt: string
+  id: string;
+  requestId: string | null;
+  workspaceId: string;
+  method: string;
+  url: string;
+  requestHeaders: string | null;
+  requestBody: string | null;
+  statusCode: number | null;
+  responseHeaders: string | null;
+  responseBody: string | null;
+  responseSizeBytes: number | null;
+  responseTimeMs: number | null;
+  errorMessage: string | null;
+  executedAt: string;
 }
 
 export interface Collection {
-  id: string
-  workspaceId: string
-  parentId: string | null
-  name: string
-  description: string | null
-  sortOrder: number
-  isAutoGenerated: boolean
-  createdAt: string
+  id: string;
+  workspaceId: string;
+  parentId: string | null;
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  isAutoGenerated: boolean;
+  createdAt: string;
 }
 
 export interface Environment {
-  id: string
-  workspaceId: string
-  name: string
-  isActive: boolean
-  createdAt: string
+  id: string;
+  workspaceId: string;
+  name: string;
+  isActive: boolean;
+  createdAt: string;
 }
 
 export interface EnvVariable {
-  id: string
-  environmentId: string
-  key: string
-  value: string
-  isSecret: boolean
+  id: string;
+  environmentId: string;
+  key: string;
+  value: string;
+  isSecret: boolean;
 }
 
 export interface DiscoveredEndpoint {
-  id: string
-  workspaceId: string
-  path: string
-  method: string
-  summary: string | null
-  description: string | null
-  parameters: string | null
-  requestSchema: string | null
-  responseSchema: string | null
-  tags: string[]
-  authRequired: boolean
-  deprecated: boolean
-  source: string
-  discoveredAt: string
+  id: string;
+  workspaceId: string;
+  path: string;
+  method: string;
+  summary: string | null;
+  description: string | null;
+  parameters: string | null;
+  requestSchema: string | null;
+  responseSchema: string | null;
+  tags: string[];
+  authRequired: boolean;
+  deprecated: boolean;
+  source: string;
+  discoveredAt: string;
 }
 
 export interface DiscoveryProgress {
-  step: string
-  message: string
-  progress: number
-  endpointsFound: number
+  step: string;
+  message: string;
+  progress: number;
+  endpointsFound: number;
 }
 
 export interface DiscoveryResult {
-  endpoints: DiscoveredEndpoint[]
-  specUrl: string | null
-  specVersion: string | null
-  title: string | null
+  endpoints: DiscoveredEndpoint[];
+  specUrl: string | null;
+  specVersion: string | null;
+  title: string | null;
 }

@@ -6,6 +6,7 @@ import ParamsEditor from './ParamsEditor.vue'
 import HeadersEditor from './HeadersEditor.vue'
 import BodyEditor from './BodyEditor.vue'
 import AuthEditor from './AuthEditor.vue'
+import CodeGenPanel from './CodeGenPanel.vue'
 
 const requestStore = useRequestStore()
 const activeTab = ref('params')
@@ -19,6 +20,7 @@ const tabs = computed(() => {
     { id: 'headers', label: 'Headers', badge: headersCount > 0 ? String(headersCount) : '' },
     { id: 'body', label: 'Body', badge: requestStore.bodyType !== 'none' ? '1' : '' },
     { id: 'auth', label: 'Auth', badge: requestStore.authType !== 'none' ? '1' : '' },
+    { id: 'codegen', label: 'Code' },
   ]
 })
 </script>
@@ -31,6 +33,7 @@ const tabs = computed(() => {
       <HeadersEditor v-else-if="activeTab === 'headers'" />
       <BodyEditor v-else-if="activeTab === 'body'" />
       <AuthEditor v-else-if="activeTab === 'auth'" />
+      <CodeGenPanel v-else-if="activeTab === 'codegen'" />
     </div>
   </div>
 </template>

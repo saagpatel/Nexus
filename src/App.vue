@@ -10,6 +10,8 @@ import { useCollectionStore } from '@/stores/collection'
 import { useRequestStore } from '@/stores/request'
 import { useResponseStore } from '@/stores/response'
 import { useEnvironmentStore } from '@/stores/environment'
+import { useProtocolStore } from '@/stores/protocol'
+import { useWebSocketStore } from '@/stores/websocket'
 import { useShortcuts } from '@/composables/useShortcuts'
 
 const workspaceStore = useWorkspaceStore()
@@ -17,6 +19,8 @@ const collectionStore = useCollectionStore()
 const requestStore = useRequestStore()
 const responseStore = useResponseStore()
 const environmentStore = useEnvironmentStore()
+const protocolStore = useProtocolStore()
+const webSocketStore = useWebSocketStore()
 
 const showSaveDialog = ref(false)
 const workspaceViewRef = ref<InstanceType<typeof WorkspaceView> | null>(null)
@@ -50,8 +54,11 @@ useShortcuts([
     key: 'Escape',
     meta: false,
     handler: () => {
-      if (responseStore.isLoading) {
+      if (protocolStore.mode === 'http' && responseStore.isLoading) {
         window.api.invoke('http:cancel')
+      }
+      if (protocolStore.mode === 'websocket' && webSocketStore.status === 'connected') {
+        webSocketStore.disconnect().catch(() => undefined)
       }
     },
     description: 'Cancel in-flight request',
@@ -69,11 +76,13 @@ onMounted(async () => {
 })
 
 function handleNewRequest() {
+  if (protocolStore.mode !== 'http') return
   requestStore.reset()
   responseStore.reset()
 }
 
 async function handleSave() {
+  if (protocolStore.mode !== 'http') return
   if (!workspaceStore.currentWorkspace) return
 
   if (requestStore.currentRequestId) {
@@ -86,7 +95,7 @@ async function handleSave() {
       headers: requestStore.headers,
       queryParams: requestStore.queryParams,
       bodyType: requestStore.bodyType,
-      bodyContent: requestStore.bodyContent,
+      bodyContent: requestStore.getPersistedBodyContent(),
       authType: requestStore.authType,
       authConfig: requestStore.authConfig,
     })
@@ -101,6 +110,7 @@ async function handleSave() {
 
 async function handleSaveWithName(name: string) {
   showSaveDialog.value = false
+  if (protocolStore.mode !== 'http') return
   if (!workspaceStore.currentWorkspace) return
 
   const saved = await collectionStore.saveRequest(workspaceStore.currentWorkspace.id, {
@@ -109,8 +119,8 @@ async function handleSaveWithName(name: string) {
     url: requestStore.url,
     headers: requestStore.headers,
     queryParams: requestStore.queryParams,
-    bodyType: requestStore.bodyType,
-    bodyContent: requestStore.bodyContent,
+      bodyType: requestStore.bodyType,
+      bodyContent: requestStore.getPersistedBodyContent(),
     authType: requestStore.authType,
     authConfig: requestStore.authConfig,
   })
@@ -124,6 +134,7 @@ async function handleSaveWithName(name: string) {
 
 // Save history after each request execution
 async function saveHistory() {
+  if (protocolStore.mode !== 'http') return
   if (!workspaceStore.currentWorkspace) return
 
   await window.api.invoke('db:history:save', {
@@ -132,7 +143,7 @@ async function saveHistory() {
     method: requestStore.method,
     url: requestStore.url,
     requestHeaders: JSON.stringify(requestStore.headers),
-    requestBody: requestStore.bodyContent || null,
+    requestBody: requestStore.getPersistedBodyContent() || null,
     statusCode: responseStore.statusCode,
     responseHeaders: responseStore.statusCode ? JSON.stringify(responseStore.headers) : null,
     responseBody: responseStore.body || null,
@@ -146,7 +157,7 @@ async function saveHistory() {
 
 <template>
   <div class="h-screen grid grid-rows-[40px_1fr_24px] grid-cols-[280px_1fr]">
-    <TopBar class="col-span-2" />
+    <TopBar class="col-span-2" :mode="protocolStore.mode" @update:mode="protocolStore.setMode" />
     <Sidebar @new-request="handleNewRequest" />
     <WorkspaceView ref="workspaceViewRef" @request-sent="saveHistory" />
     <StatusBar class="col-span-2" />

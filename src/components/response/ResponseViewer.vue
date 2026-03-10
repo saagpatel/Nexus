@@ -5,14 +5,18 @@ import TabBar from '@/components/ui/TabBar.vue'
 import ResponseBody from './ResponseBody.vue'
 import ResponseHeaders from './ResponseHeaders.vue'
 import ResponseTimeline from './ResponseTimeline.vue'
+import ResponseAssertions from './ResponseAssertions.vue'
+import { useAssertionsStore } from '@/stores/assertions'
 
 const responseStore = useResponseStore()
+const assertionsStore = useAssertionsStore()
 const activeTab = ref('body')
 
 const tabs = computed(() => [
   { id: 'body', label: 'Body' },
   { id: 'headers', label: 'Headers', badge: String(Object.keys(responseStore.headers).length || '') },
   { id: 'timeline', label: 'Timeline' },
+  { id: 'assertions', label: 'Assertions', badge: assertionsStore.summary.total ? `${assertionsStore.summary.passed}/${assertionsStore.summary.total}` : '' },
 ])
 
 const hasResponse = computed(() => responseStore.statusCode !== null || responseStore.error !== null)
@@ -87,6 +91,7 @@ function formatSize(bytes: number): string {
         <ResponseBody v-if="activeTab === 'body'" />
         <ResponseHeaders v-else-if="activeTab === 'headers'" />
         <ResponseTimeline v-else-if="activeTab === 'timeline'" />
+        <ResponseAssertions v-else-if="activeTab === 'assertions'" />
       </div>
     </template>
   </div>

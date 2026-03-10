@@ -3,18 +3,56 @@
   "productName": "Nexus",
   "version": "0.1.0",
   "description": "Desktop API client for exploring and testing APIs",
-  "main": ".vite/build/main.js",
+  "main": ".vite/build/index.js",
   "private": true,
   "scripts": {
     "start": "electron-forge start",
     "lean:start": "node scripts/lean-dev.mjs",
+    "build": "pnpm build:renderer",
+    "build:main": "node scripts/build/build-main.mjs",
+    "build:preload": "node scripts/build/build-preload.mjs",
+    "build:renderer": "vite build --config vite.renderer.config.ts",
+    "build:renderer:electron": "node scripts/build/build-renderer-electron.mjs",
+    "build:desktop": "pnpm build:main && pnpm build:preload && pnpm build:renderer:electron",
+    "build:all": "pnpm build:desktop && pnpm build:renderer",
+    "prepackage": "pnpm build:main && node scripts/release/assert-main-entry.mjs",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "test": "vitest run",
     "test:watch": "vitest",
+    "e2e:prepare:natives": "node scripts/e2e/rebuild-native-deps.mjs",
+    "test:e2e:smoke": "pnpm e2e:prepare:natives && pnpm build:desktop && pnpm exec playwright test tests/e2e/desktop-smoke.spec.cjs",
     "typecheck": "vue-tsc --noEmit",
     "clean:heavy": "node scripts/clean-heavy.mjs",
-    "clean:full": "node scripts/clean-full.mjs"
+    "clean:full": "node scripts/clean-full.mjs",
+    "prepare": "husky",
+    "commit": "cz",
+    "commitlint": "commitlint",
+    "git:guard:branch": "bash scripts/git/guard-branch.sh",
+    "git:guard:no-main-push": "bash scripts/git/guard-no-main-push.sh",
+    "git:guard:atomic": "bash scripts/git/guard-atomic.sh",
+    "git:guard:generated": "bash scripts/git/guard-generated.sh",
+    "git:guard:large-files": "bash scripts/git/guard-large-files.sh",
+    "git:guard:secrets": "bash scripts/git/guard-secrets.sh",
+    "git:guard:all": "pnpm git:guard:branch && pnpm git:guard:atomic && pnpm git:guard:generated && pnpm git:guard:large-files && pnpm git:guard:secrets",
+    "git:commit:propose": "node scripts/git/propose-commit-message.mjs",
+    "git:session:save": "bash scripts/git/session-save.sh",
+    "git:session:resume": "bash scripts/git/session-resume.sh",
+    "pr:notes": "bash scripts/git/generate-pr-notes.sh",
+    "perf:bundle": "node scripts/perf/bundle-report.mjs",
+    "perf:build": "node scripts/perf/measure-build-time.mjs",
+    "perf:assets": "bash scripts/perf/check-assets.sh",
+    "perf:memory": "node --expose-gc scripts/perf/memory-smoke.mjs",
+    "perf:summary": "node scripts/perf/summarize.mjs",
+    "perf:lhci": "node scripts/perf/lhci-placeholder.mjs",
+    "perf:lhci:prod": "pnpm perf:lhci",
+    "release:mac:preflight": "bash scripts/release/mac-preflight.sh",
+    "release:mac:make:arm64": "electron-forge make --platform=darwin --arch=arm64",
+    "release:mac:make:x64": "electron-forge make --platform=darwin --arch=x64",
+    "release:mac:manifest": "node scripts/release/generate-manifest.mjs",
+    "release:mac:evidence": "node scripts/release/generate-go-no-go.mjs",
+    "release:mac:dry-run": "RELEASE_SIGN=0 RELEASE_NOTARIZE=0 RELEASE_INCLUDE_DMG=0 pnpm release:mac:preflight && pnpm typecheck && pnpm test && pnpm test:e2e:smoke && pnpm release:mac:make:arm64 && pnpm release:mac:make:x64 && pnpm release:mac:manifest && RELEASE_TYPECHECK_PASSED=1 RELEASE_TESTS_PASSED=1 RELEASE_E2E_PASSED=1 pnpm release:mac:evidence",
+    "lint-staged": "lint-staged"
   },
   "keywords": [],
   "author": {
@@ -31,8 +69,12 @@
     ]
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@commitlint/cz-commitlint": "^19.8.1",
     "@electron-forge/cli": "^7.11.1",
     "@electron-forge/maker-deb": "^7.11.1",
+    "@electron-forge/maker-dmg": "^7.11.1",
     "@electron-forge/maker-rpm": "^7.11.1",
     "@electron-forge/maker-squirrel": "^7.11.1",
     "@electron-forge/maker-zip": "^7.11.1",
@@ -40,6 +82,8 @@
     "@electron-forge/plugin-fuses": "^7.11.1",
     "@electron-forge/plugin-vite": "^7.11.1",
     "@electron/fuses": "^1.8.0",
+    "@lhci/cli": "^0.15.1",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4.1.18",
     "@types/better-sqlite3": "^7.6.13",
     "@types/electron-squirrel-startup": "^1.0.2",
@@ -47,12 +91,17 @@
     "@typescript-eslint/parser": "^5.62.0",
     "@vitejs/plugin-vue": "^5.2.4",
     "@vue/test-utils": "^2.4.6",
+    "commitizen": "^4.3.1",
     "electron": "40.2.1",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
     "happy-dom": "^20.5.3",
+    "husky": "^9.1.7",
     "jsdom": "^28.0.0",
+    "lint-staged": "^15.5.2",
+    "playwright": "^1.58.2",
     "postcss": "^8.5.6",
+    "prettier": "^3.6.2",
     "tailwindcss": "^4.1.18",
     "typescript": "~5.9.3",
     "vite": "^5.4.21",
@@ -68,6 +117,20 @@
     "pinia": "^3.0.4",
     "radix-vue": "^1.9.17",
     "undici": "^7.21.0",
-    "vue": "^3.5.27"
+    "vue": "^3.5.27",
+    "ws": "^8.18.3"
+  },
+  "optionalDependencies": {
+    "@types/ws": "^8.18.1"
+  },
+  "config": {
+    "commitizen": {
+      "path": "@commitlint/cz-commitlint"
+    }
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,mjs,cjs,json,md,css,scss,yml,yaml}": [
+      "prettier --write"
+    ]
   }
 }

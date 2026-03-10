@@ -9,8 +9,8 @@ fi
 
 failed=0
 while IFS= read -r cmd || [[ -n "$cmd" ]]; do
-  [[ -z "$cmd" ]] && continue
-  [[ "$cmd" =~ ^# ]] && continue
+  [[ -z "${cmd//[[:space:]]/}" ]] && continue
+  [[ "$cmd" =~ ^[[:space:]]*# ]] && continue
   echo ">>> $cmd"
   if ! bash -lc "$cmd"; then
     failed=1

@@ -3,8 +3,11 @@ import { ref } from 'vue'
 import type { TreeNode } from '@/stores/collection'
 import type { Collection, SavedRequest } from '@shared/ipc-types'
 import { useCollectionStore } from '@/stores/collection'
+import { useProtocolStore } from '@/stores/protocol'
 import { useRequestStore } from '@/stores/request'
+import { useWebSocketStore } from '@/stores/websocket'
 import { useWorkspaceStore } from '@/stores/workspace'
+import { isWebSocketRequest } from '@/utils/saved-request'
 import MethodBadge from './MethodBadge.vue'
 
 const props = defineProps<{
@@ -17,13 +20,16 @@ const emit = defineEmits<{
 }>()
 
 const collectionStore = useCollectionStore()
+const protocolStore = useProtocolStore()
 const requestStore = useRequestStore()
+const webSocketStore = useWebSocketStore()
 const workspaceStore = useWorkspaceStore()
 
 const isExpanded = ref(true)
 const isRenaming = ref(false)
 const renameValue = ref('')
 const renameInput = ref<HTMLInputElement | null>(null)
+const isRunningCollection = ref(false)
 
 const isCollection = props.node.type === 'collection'
 const collection = isCollection ? props.node.data as Collection : null
@@ -39,7 +45,14 @@ async function loadRequest() {
   if (!request) return
   const result = await window.api.invoke('db:request:get', { id: request.id })
   if (result.success && result.data) {
-    requestStore.loadFromSaved(result.data)
+    if (isWebSocketRequest(result.data)) {
+      protocolStore.setMode('websocket')
+      requestStore.setCurrentSelection(result.data.id, result.data.name)
+      webSocketStore.loadFromSaved(result.data)
+    } else {
+      protocolStore.setMode('http')
+      requestStore.loadFromSaved(result.data)
+    }
     emit('request-selected', request.id)
   }
 }
@@ -79,6 +92,27 @@ async function handleDelete() {
 async function handleNewSubCollection() {
   if (!collection || !workspaceStore.currentWorkspace) return
   await collectionStore.createCollection(workspaceStore.currentWorkspace.id, 'New Folder', collection.id)
+}
+
+async function handleRunCollection() {
+  if (!collection || !workspaceStore.currentWorkspace || isRunningCollection.value) return
+  isRunningCollection.value = true
+
+  const result = await window.api.invoke('runner:collection', {
+    workspaceId: workspaceStore.currentWorkspace.id,
+    collectionId: collection.id,
+    stopOnFailure: false,
+  })
+
+  isRunningCollection.value = false
+
+  if (!result.success) {
+    window.alert(`Collection run failed: ${result.error}`)
+    return
+  }
+
+  const summary = `Run complete: ${result.data.passed}/${result.data.total} passed in ${result.data.durationMs} ms.`
+  window.alert(summary)
 }
 </script>
 
@@ -124,6 +158,17 @@ async function handleNewSubCollection() {
 
       <!-- Actions -->
       <div class="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          class="p-0.5 rounded hover:bg-nexus-border"
+          :title="isRunningCollection ? 'Running...' : 'Run Collection'"
+          :disabled="isRunningCollection"
+          @click.stop="handleRunCollection"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3" />
+          </svg>
+        </button>
         <button class="p-0.5 rounded hover:bg-nexus-border" title="New Sub-folder" @click.stop="handleNewSubCollection">
           <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

@@ -8,6 +8,7 @@ const requestStore = useRequestStore()
 const bodyTypes = [
   { value: 'none' as const, label: 'None' },
   { value: 'json' as const, label: 'JSON' },
+  { value: 'graphql' as const, label: 'GraphQL' },
   { value: 'text' as const, label: 'Text' },
   { value: 'form-urlencoded' as const, label: 'Form URL-Encoded' },
 ]
@@ -15,34 +16,54 @@ const bodyTypes = [
 const editorContainer = ref<HTMLElement | null>(null)
 const monacoLanguage = computed(() => {
   if (requestStore.bodyType === 'json') return 'json'
+  if (requestStore.bodyType === 'graphql') return 'graphql'
   return 'plaintext'
 })
 
 const { value: editorValue, setLanguage } = useMonaco(editorContainer, {
   language: monacoLanguage.value,
-  value: requestStore.bodyContent,
+  value: requestStore.bodyType === 'graphql' ? requestStore.graphqlQuery : requestStore.bodyContent,
 })
 
-// Sync editor → store
+// Sync editor -> store
 watch(editorValue, (newVal) => {
+  if (requestStore.bodyType === 'graphql') {
+    requestStore.graphqlQuery = newVal
+    return
+  }
   requestStore.bodyContent = newVal
 })
 
-// Sync store → editor (e.g. when loading a saved request)
-watch(() => requestStore.bodyContent, (newVal) => {
-  if (editorValue.value !== newVal) {
-    editorValue.value = newVal
+// Sync store -> editor (e.g. when loading a saved request)
+watch([() => requestStore.bodyContent, () => requestStore.graphqlQuery, () => requestStore.bodyType], () => {
+  const nextValue = requestStore.bodyType === 'graphql' ? requestStore.graphqlQuery : requestStore.bodyContent
+  if (editorValue.value !== nextValue) {
+    editorValue.value = nextValue
   }
 })
 
-// Update language when body type changes
-watch(() => requestStore.bodyType, () => {
+watch(() => requestStore.graphqlVariables, (newVal) => {
+  if (!newVal.trim()) {
+    requestStore.graphqlVariables = '{}'
+  }
+})
+
+watch(() => requestStore.bodyType, (newType, oldType) => {
+  if (oldType !== 'graphql' && newType === 'graphql' && !requestStore.graphqlVariables.trim()) {
+    requestStore.graphqlVariables = '{}'
+  }
+  const nextValue = newType === 'graphql' ? requestStore.graphqlQuery : requestStore.bodyContent
+  if (editorValue.value !== nextValue) {
+    editorValue.value = nextValue
+  }
   setLanguage(monacoLanguage.value)
 })
 
 const showEditor = computed(() =>
-  requestStore.bodyType === 'json' || requestStore.bodyType === 'text'
+  requestStore.bodyType === 'json' || requestStore.bodyType === 'text' || requestStore.bodyType === 'graphql'
 )
+
+const graphqlVariablesPlaceholder = '{\n  "limit": 10\n}'
 </script>
 
 <template>
@@ -66,6 +87,30 @@ const showEditor = computed(() =>
     <div class="flex-1 overflow-hidden">
       <div v-if="requestStore.bodyType === 'none'" class="flex items-center justify-center h-full text-xs text-nexus-text-muted">
         This request does not have a body
+      </div>
+
+      <div v-else-if="requestStore.bodyType === 'graphql'" class="h-full flex flex-col overflow-hidden">
+        <div class="px-3 py-2 border-b border-nexus-border bg-nexus-bg/40 space-y-2">
+          <label class="block text-[10px] uppercase tracking-wide text-nexus-text-muted">
+            Operation Name (Optional)
+          </label>
+          <input
+            v-model="requestStore.graphqlOperationName"
+            type="text"
+            placeholder="GetUsers"
+            class="w-full bg-nexus-bg border border-nexus-border rounded px-2 py-1.5 text-xs text-nexus-text focus:outline-none focus:border-nexus-accent transition-colors"
+          />
+          <label class="block text-[10px] uppercase tracking-wide text-nexus-text-muted">
+            Variables (JSON Object)
+          </label>
+          <textarea
+            v-model="requestStore.graphqlVariables"
+            class="w-full h-24 bg-nexus-bg border border-nexus-border rounded px-2 py-1.5 text-xs font-mono text-nexus-text resize-none focus:outline-none focus:border-nexus-accent transition-colors"
+            spellcheck="false"
+            :placeholder="graphqlVariablesPlaceholder"
+          />
+        </div>
+        <div ref="editorContainer" class="flex-1 w-full" />
       </div>
 
       <div v-else-if="showEditor" ref="editorContainer" class="h-full w-full" />

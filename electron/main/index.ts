@@ -1,161 +1,346 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
-import path from 'node:path'
-import started from 'electron-squirrel-startup'
-import { initDatabase, closeDatabase } from './database/connection'
-import { getOrCreateDefaultWorkspace, listWorkspaces, getWorkspace } from './database/queries/workspaces'
-import { saveRequest, getRequest, listRequests, deleteRequest, reorderRequests } from './database/queries/requests'
-import { saveHistoryEntry, listHistory } from './database/queries/history'
-import { listCollections, createCollection, updateCollection, deleteCollection, reorderCollections } from './database/queries/collections'
-import { listEnvironments, createEnvironment, updateEnvironment, deleteEnvironment, setActiveEnvironment, getActiveEnvironment, listVariables, setVariable, deleteVariable, getResolvedVariables } from './database/queries/environments'
-import { listDiscoveredEndpoints, clearDiscoveredEndpoints } from './database/queries/discovery'
-import { executeRequest, cancelActiveRequest } from './ipc/http-client'
-import { importPostmanCollection } from './services/postman-importer'
-import { startDiscovery, cancelDiscovery } from './services/discovery-engine'
+import { app, BrowserWindow, ipcMain, dialog } from "electron";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import started from "electron-squirrel-startup";
+import { initDatabase, closeDatabase } from "./database/connection";
+import {
+  getOrCreateDefaultWorkspace,
+  listWorkspaces,
+  getWorkspace,
+} from "./database/queries/workspaces";
+import {
+  saveRequest,
+  getRequest,
+  listRequests,
+  deleteRequest,
+  reorderRequests,
+} from "./database/queries/requests";
+import { saveHistoryEntry, listHistory } from "./database/queries/history";
+import {
+  listCollections,
+  createCollection,
+  updateCollection,
+  deleteCollection,
+  reorderCollections,
+} from "./database/queries/collections";
+import {
+  listEnvironments,
+  createEnvironment,
+  updateEnvironment,
+  deleteEnvironment,
+  setActiveEnvironment,
+  getActiveEnvironment,
+  listVariables,
+  setVariable,
+  deleteVariable,
+  getResolvedVariables,
+} from "./database/queries/environments";
+import {
+  listDiscoveredEndpoints,
+  clearDiscoveredEndpoints,
+} from "./database/queries/discovery";
+import { executeRequest, cancelActiveRequest } from "./ipc/http-client";
+import { importPostmanCollection } from "./services/postman-importer";
+import { startDiscovery, cancelDiscovery } from "./services/discovery-engine";
+import { runCollection } from "./services/collection-runner";
+import {
+  connectWebSocket,
+  disconnectWebSocket,
+  getWebSocketState,
+  sendWebSocketMessage,
+} from "./services/websocket-client";
+import {
+  getMockServerState,
+  startMockServer,
+  stopMockServer,
+} from "./services/mock-server";
+import {
+  isAllowedAppNavigationUrl,
+  isTrustedSenderUrl,
+  type RendererTrustOptions,
+} from "./security";
+import { validateIpcArgs } from "@shared/ipc-validators";
 
-if (started) app.quit()
+if (started) app.quit();
 
-let mainWindow: BrowserWindow | null = null
+if (process.env.E2E_DISABLE_SANDBOX === "1" && process.platform === "linux") {
+  app.commandLine.appendSwitch("no-sandbox");
+}
+
+let mainWindow: BrowserWindow | null = null;
+
+function getRendererTrustOptions(): RendererTrustOptions {
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    return {
+      devServerUrl: MAIN_WINDOW_VITE_DEV_SERVER_URL,
+    };
+  }
+
+  const rendererEntryPath = path.join(
+    __dirname,
+    `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`,
+  );
+
+  return {
+    appFileUrl: pathToFileURL(rendererEntryPath).toString(),
+  };
+}
 
 const createWindow = (): void => {
+  const rendererEntryPath = path.join(
+    __dirname,
+    `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`,
+  );
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 900,
     minHeight: 600,
-    title: 'Nexus',
-    backgroundColor: '#09090b',
+    title: "Nexus",
+    backgroundColor: "#09090b",
     webPreferences: {
-      preload: path.join(__dirname, '../preload/index.js'),
+      preload: path.join(__dirname, "../preload/index.js"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
+      webSecurity: true,
     },
-  })
+  });
+
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  mainWindow.webContents.on("will-attach-webview", (event) => {
+    event.preventDefault();
+  });
+  mainWindow.webContents.on("will-navigate", (event, targetUrl) => {
+    if (!isAllowedAppNavigationUrl(targetUrl, getRendererTrustOptions())) {
+      event.preventDefault();
+    }
+  });
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL)
+    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
-    mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
-    )
+    mainWindow.loadFile(rendererEntryPath);
   }
 
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.webContents.openDevTools()
+  if (process.env.NODE_ENV === "development") {
+    mainWindow.webContents.openDevTools();
   }
+};
+
+function registerValidatedHandler<
+  K extends keyof import("@shared/ipc-channels").IpcChannelMap,
+>(
+  channel: K,
+  handler: (
+    args: import("@shared/ipc-channels").IpcChannelMap[K]["args"],
+  ) =>
+    | Promise<
+        import("@shared/ipc-channels").IpcChannelMap[K]["return"] extends
+          | { success: true; data: infer T }
+          | { success: false; error: string }
+          ? T
+          : never
+      >
+    | (import("@shared/ipc-channels").IpcChannelMap[K]["return"] extends
+        | { success: true; data: infer T }
+        | { success: false; error: string }
+        ? T
+        : never),
+): void {
+  ipcMain.handle(channel, async (event, rawArgs) => {
+    if (!isTrustedSender(event)) {
+      return { success: false as const, error: "Untrusted IPC sender" };
+    }
+
+    try {
+      const safeArgs = validateIpcArgs(channel, rawArgs);
+      const data = await handler(safeArgs);
+      return { success: true as const, data };
+    } catch (e) {
+      return {
+        success: false as const,
+        error: e instanceof Error ? e.message : "Unknown error",
+      };
+    }
+  });
 }
 
-function wrapHandler<T>(fn: () => T): (_event: Electron.IpcMainInvokeEvent) => Promise<{ success: true; data: T } | { success: false; error: string }>
-function wrapHandler<A, T>(fn: (args: A) => T): (_event: Electron.IpcMainInvokeEvent, args: A) => Promise<{ success: true; data: T } | { success: false; error: string }>
-function wrapHandler<A, T>(fn: (args?: A) => T) {
-  return async (_event: Electron.IpcMainInvokeEvent, args?: A) => {
-    try {
-      const data = fn(args)
-      return { success: true, data }
-    } catch (e) {
-      return { success: false, error: e instanceof Error ? e.message : 'Unknown error' }
-    }
+function isTrustedSender(event: Electron.IpcMainInvokeEvent): boolean {
+  if (!event.senderFrame) {
+    return false;
   }
+
+  return isTrustedSenderUrl(event.senderFrame.url, getRendererTrustOptions());
 }
 
 function registerIpcHandlers(): void {
   // System
-  ipcMain.handle('app:ping', async () => {
-    return { success: true, data: { timestamp: Date.now() } }
-  })
+  registerValidatedHandler("app:ping", async () => ({ timestamp: Date.now() }));
 
   // Workspaces
-  ipcMain.handle('db:workspace:list', wrapHandler(listWorkspaces))
-  ipcMain.handle('db:workspace:get', wrapHandler((args: { id: string }) => getWorkspace(args.id)))
-  ipcMain.handle('db:workspace:getDefault', wrapHandler(getOrCreateDefaultWorkspace))
+  registerValidatedHandler("db:workspace:list", async () => listWorkspaces());
+  registerValidatedHandler("db:workspace:get", async (args) =>
+    getWorkspace(args.id),
+  );
+  registerValidatedHandler("db:workspace:getDefault", async () =>
+    getOrCreateDefaultWorkspace(),
+  );
 
   // Collections
-  ipcMain.handle('db:collection:list', wrapHandler((args: { workspaceId: string }) => listCollections(args.workspaceId)))
-  ipcMain.handle('db:collection:create', wrapHandler((args: { workspaceId: string; parentId?: string | null; name: string; description?: string | null }) => createCollection(args)))
-  ipcMain.handle('db:collection:update', wrapHandler((args: { id: string; name?: string; parentId?: string | null; sortOrder?: number; description?: string | null }) => updateCollection(args.id, args)))
-  ipcMain.handle('db:collection:delete', wrapHandler((args: { id: string }) => deleteCollection(args.id)))
-  ipcMain.handle('db:collection:reorder', wrapHandler((args: { items: Array<{ id: string; sortOrder: number; parentId?: string | null }> }) => reorderCollections(args.items)))
+  registerValidatedHandler("db:collection:list", async (args) =>
+    listCollections(args.workspaceId),
+  );
+  registerValidatedHandler("db:collection:create", async (args) =>
+    createCollection(args),
+  );
+  registerValidatedHandler("db:collection:update", async (args) =>
+    updateCollection(args.id, args),
+  );
+  registerValidatedHandler("db:collection:delete", async (args) =>
+    deleteCollection(args.id),
+  );
+  registerValidatedHandler("db:collection:reorder", async (args) =>
+    reorderCollections(args.items),
+  );
 
   // Requests
-  ipcMain.handle('db:request:save', wrapHandler((args: Omit<import('@shared/ipc-types').SavedRequest, 'createdAt' | 'updatedAt'>) => saveRequest(args)))
-  ipcMain.handle('db:request:get', wrapHandler((args: { id: string }) => getRequest(args.id)))
-  ipcMain.handle('db:request:list', wrapHandler((args: { workspaceId: string; collectionId?: string | null }) => listRequests(args.workspaceId, args.collectionId)))
-  ipcMain.handle('db:request:delete', wrapHandler((args: { id: string }) => deleteRequest(args.id)))
-  ipcMain.handle('db:request:reorder', wrapHandler((args: { items: Array<{ id: string; sortOrder: number; collectionId?: string | null }> }) => reorderRequests(args.items)))
+  registerValidatedHandler("db:request:save", async (args) =>
+    saveRequest(args),
+  );
+  registerValidatedHandler("db:request:get", async (args) =>
+    getRequest(args.id),
+  );
+  registerValidatedHandler("db:request:list", async (args) =>
+    listRequests(args.workspaceId, args.collectionId),
+  );
+  registerValidatedHandler("db:request:delete", async (args) =>
+    deleteRequest(args.id),
+  );
+  registerValidatedHandler("db:request:reorder", async (args) =>
+    reorderRequests(args.items),
+  );
 
   // Environments
-  ipcMain.handle('db:env:list', wrapHandler((args: { workspaceId: string }) => listEnvironments(args.workspaceId)))
-  ipcMain.handle('db:env:create', wrapHandler((args: { workspaceId: string; name: string }) => createEnvironment(args)))
-  ipcMain.handle('db:env:update', wrapHandler((args: { id: string; name: string }) => updateEnvironment(args.id, { name: args.name })))
-  ipcMain.handle('db:env:delete', wrapHandler((args: { id: string }) => deleteEnvironment(args.id)))
-  ipcMain.handle('db:env:setActive', wrapHandler((args: { workspaceId: string; environmentId: string | null }) => setActiveEnvironment(args.workspaceId, args.environmentId)))
-  ipcMain.handle('db:env:getActive', wrapHandler((args: { workspaceId: string }) => getActiveEnvironment(args.workspaceId)))
-  ipcMain.handle('db:env:variables:list', wrapHandler((args: { environmentId: string }) => listVariables(args.environmentId)))
-  ipcMain.handle('db:env:variables:set', wrapHandler((args: { environmentId: string; key: string; value: string; isSecret?: boolean }) => setVariable(args.environmentId, args.key, args.value, args.isSecret)))
-  ipcMain.handle('db:env:variables:delete', wrapHandler((args: { id: string }) => deleteVariable(args.id)))
-  ipcMain.handle('db:env:resolvedVariables', wrapHandler((args: { workspaceId: string }) => getResolvedVariables(args.workspaceId)))
+  registerValidatedHandler("db:env:list", async (args) =>
+    listEnvironments(args.workspaceId),
+  );
+  registerValidatedHandler("db:env:create", async (args) =>
+    createEnvironment(args),
+  );
+  registerValidatedHandler("db:env:update", async (args) =>
+    updateEnvironment(args.id, { name: args.name }),
+  );
+  registerValidatedHandler("db:env:delete", async (args) =>
+    deleteEnvironment(args.id),
+  );
+  registerValidatedHandler("db:env:setActive", async (args) =>
+    setActiveEnvironment(args.workspaceId, args.environmentId),
+  );
+  registerValidatedHandler("db:env:getActive", async (args) =>
+    getActiveEnvironment(args.workspaceId),
+  );
+  registerValidatedHandler("db:env:variables:list", async (args) =>
+    listVariables(args.environmentId),
+  );
+  registerValidatedHandler("db:env:variables:set", async (args) =>
+    setVariable(args.environmentId, args.key, args.value, args.isSecret),
+  );
+  registerValidatedHandler("db:env:variables:delete", async (args) =>
+    deleteVariable(args.id),
+  );
+  registerValidatedHandler("db:env:resolvedVariables", async (args) =>
+    getResolvedVariables(args.workspaceId),
+  );
 
   // HTTP
-  ipcMain.handle('http:execute', async (_event, args: import('@shared/ipc-types').HttpRequest) => {
-    return executeRequest(args)
-  })
-  ipcMain.handle('http:cancel', async () => {
-    try {
-      cancelActiveRequest()
-      return { success: true, data: undefined }
-    } catch (e) {
-      return { success: false, error: e instanceof Error ? e.message : 'Unknown error' }
+  registerValidatedHandler("http:execute", async (args) => {
+    const result = await executeRequest(args);
+    if (!result.success) {
+      throw new Error(result.error);
     }
-  })
+    return result.data;
+  });
+  registerValidatedHandler("http:cancel", async () => {
+    cancelActiveRequest();
+  });
+  registerValidatedHandler("runner:collection", async (args) =>
+    runCollection(args),
+  );
+  registerValidatedHandler("ws:connect", async (args) =>
+    connectWebSocket(args, mainWindow!),
+  );
+  registerValidatedHandler("ws:disconnect", async () => disconnectWebSocket());
+  registerValidatedHandler("ws:send", async (args) => {
+    await sendWebSocketMessage(args.message);
+  });
+  registerValidatedHandler("ws:state", async () => getWebSocketState());
+  registerValidatedHandler("mock:start", async (args) =>
+    startMockServer(args, mainWindow!),
+  );
+  registerValidatedHandler("mock:stop", async () => stopMockServer());
+  registerValidatedHandler("mock:state", async () => getMockServerState());
 
   // History
-  ipcMain.handle('db:history:save', wrapHandler((args: Omit<import('@shared/ipc-types').HistoryEntry, 'id' | 'executedAt'>) => saveHistoryEntry(args)))
-  ipcMain.handle('db:history:list', wrapHandler((args: { workspaceId: string; limit?: number }) => listHistory(args.workspaceId, args.limit)))
+  registerValidatedHandler("db:history:save", async (args) =>
+    saveHistoryEntry(args),
+  );
+  registerValidatedHandler("db:history:list", async (args) =>
+    listHistory(args.workspaceId, args.limit),
+  );
 
   // Discovery
-  ipcMain.handle('discovery:start', async (_event, args: { workspaceId: string; baseUrl: string }) => {
-    return startDiscovery(args.workspaceId, args.baseUrl, mainWindow!)
-  })
-  ipcMain.handle('discovery:cancel', async () => {
-    try {
-      cancelDiscovery()
-      return { success: true as const, data: undefined }
-    } catch (e) {
-      return { success: false as const, error: e instanceof Error ? e.message : 'Unknown error' }
+  registerValidatedHandler("discovery:start", async (args) => {
+    const result = await startDiscovery(
+      args.workspaceId,
+      args.baseUrl,
+      mainWindow!,
+    );
+    if (!result.success) {
+      throw new Error(result.error);
     }
-  })
-  ipcMain.handle('db:discovery:list', wrapHandler((args: { workspaceId: string }) => listDiscoveredEndpoints(args.workspaceId)))
-  ipcMain.handle('db:discovery:clear', wrapHandler((args: { workspaceId: string }) => clearDiscoveredEndpoints(args.workspaceId)))
+    return result.data;
+  });
+  registerValidatedHandler("discovery:cancel", async () => {
+    cancelDiscovery();
+  });
+  registerValidatedHandler("db:discovery:list", async (args) =>
+    listDiscoveredEndpoints(args.workspaceId),
+  );
+  registerValidatedHandler("db:discovery:clear", async (args) =>
+    clearDiscoveredEndpoints(args.workspaceId),
+  );
 
   // Import
-  ipcMain.handle('import:postman', wrapHandler((args: { filePath: string; workspaceId: string }) => importPostmanCollection(args.filePath, args.workspaceId)))
-  ipcMain.handle('dialog:openFile', async (_event, args: { filters?: Array<{ name: string; extensions: string[] }> }) => {
-    try {
-      const result = await dialog.showOpenDialog(mainWindow!, {
-        properties: ['openFile'],
-        filters: args.filters || [{ name: 'All Files', extensions: ['*'] }],
-      })
-      return { success: true as const, data: result.canceled ? null : result.filePaths[0] ?? null }
-    } catch (e) {
-      return { success: false as const, error: e instanceof Error ? e.message : 'Unknown error' }
-    }
-  })
+  registerValidatedHandler("import:postman", async (args) =>
+    importPostmanCollection(args.filePath, args.workspaceId),
+  );
+  registerValidatedHandler("dialog:openFile", async (args) => {
+    const result = await dialog.showOpenDialog(mainWindow!, {
+      properties: ["openFile"],
+      filters: args.filters || [{ name: "All Files", extensions: ["*"] }],
+    });
+    return result.canceled ? null : (result.filePaths[0] ?? null);
+  });
 }
 
 app.whenReady().then(() => {
-  initDatabase()
-  registerIpcHandlers()
-  createWindow()
-})
+  initDatabase();
+  registerIpcHandlers();
+  createWindow();
+});
 
-app.on('before-quit', () => {
-  closeDatabase()
-})
+app.on("before-quit", () => {
+  void disconnectWebSocket();
+  void stopMockServer();
+  closeDatabase();
+});
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
-})
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") app.quit();
+});
 
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) createWindow()
-})
+app.on("activate", () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});
