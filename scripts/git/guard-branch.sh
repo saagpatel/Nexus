@@ -10,6 +10,11 @@ if [[ "$branch" == "HEAD" && ( "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "
   exit 0
 fi
 
+if [[ ( "${CI:-}" == "true" || "${GITHUB_ACTIONS:-}" == "true" ) && ( "$branch" == "main" || "$branch" == "master" ) ]]; then
+  echo "Protected branch $branch allowed in CI."
+  exit 0
+fi
+
 if [[ "$branch" == "main" || "$branch" == "master" ]]; then
   echo "Direct work on $branch is blocked."
   exit 1
