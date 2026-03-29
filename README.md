@@ -1,213 +1,63 @@
 # Nexus
 
-> A local-first desktop API workbench for HTTP, GraphQL, WebSockets, mock servers, assertions, and collection runs.
+[![TypeScript](https://img.shields.io/badge/TypeScript-%233178c6?style=flat-square&logo=typescript)](#) [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](#)
 
-Nexus is built for developers who want more than a request tab and a response pane. It gives you one desktop workspace for exploring APIs, validating behavior, replaying flows, mocking endpoints, and turning successful experiments into repeatable workflows.
+> The API workbench for what happens *after* you send the first request.
 
-![License](https://img.shields.io/badge/license-MIT-blue)
-![Desktop](https://img.shields.io/badge/desktop-Electron%20%2B%20Vue-2d6cdf)
-![Status](https://img.shields.io/badge/status-active%20desktop%20app-1f9d55)
-![Release](https://img.shields.io/badge/release%20target-macOS%20first-lightgrey)
+Most API clients are optimized for one request at a time. Nexus is built for the full iteration loop: explore an endpoint, assert its behavior, replay the flow, mock it locally while you shape payloads, save the sequence into a collection, and export code when you're done. All of it lives in a single local desktop workspace that persists between sessions.
 
-## At A Glance
+## Features
 
-| Category        | Current state                                                                                                            |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Best for        | API developers who want one local workspace for request building, protocol testing, assertions, and collection execution |
-| Core protocols  | HTTP, GraphQL, WebSocket, local mock server workflows                                                                    |
-| Built with      | Electron, Vue 3, TypeScript, Monaco, SQLite                                                                              |
-| Verification    | Typecheck, 124 automated tests, Electron smoke coverage, package flow, macOS dry-run release path                        |
-| Release posture | macOS-first release path validated locally; Apple signing/notarization intentionally deferred                            |
-
-## Why Nexus Feels Different
-
-Most API clients are optimized for sending one request at a time. Nexus is optimized for what usually happens next.
-
-When you are iterating on an API, you often need to do more than fire a request and inspect a JSON body. You may want to:
-
-- flip between HTTP and WebSocket workflows without changing tools
-- run a mock endpoint locally while you shape payloads and assertions
-- save requests into collections and execute them in order
-- keep a persistent local workspace instead of disposable tabs
-- turn a successful request into cURL, `fetch`, or Axios output immediately
-
-That is the layer Nexus is trying to own.
-
-## The Experience In One Flow
-
-```mermaid
-flowchart LR
-    A[Build request] --> B[Send or connect]
-    B --> C[Inspect response or live events]
-    C --> D[Assert behavior]
-    D --> E[Save to collection]
-    E --> F[Run sequence again]
-    F --> G[Export code snippet or keep iterating]
-```
-
-## What You Can Do Today
-
-| Workflow             | What Nexus gives you                                                                                                                              |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| HTTP requests        | Full request building for `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD`, and `OPTIONS`, with headers, params, auth, and structured body editing |
-| GraphQL              | Query editing, variables, operation names, and proper request payload generation                                                                  |
-| WebSocket testing    | Connect, disconnect, send messages, and inspect a live event timeline                                                                             |
-| Local mocking        | Define routes, run a localhost mock server, and review captured mock traffic                                                                      |
-| Validation           | Add assertions for status, headers, and body content                                                                                              |
-| Request reuse        | Save requests into hierarchical collections and replay them later                                                                                 |
-| Collection execution | Run request groups sequentially with stop-on-failure behavior and basic `last_*` chaining                                                         |
-| Code generation      | Export the active request as cURL, `fetch`, or Axios                                                                                              |
-| Environments         | Use `{{variable}}` substitution with secret-aware environment values                                                                              |
-| Discovery            | Probe common OpenAPI and Swagger spec locations and import discovered endpoints                                                                   |
-| History              | Track and replay prior requests from local history                                                                                                |
-
-## Current Stage
-
-Nexus has moved well beyond an early prototype. The app now has:
-
-- working desktop flows for HTTP, GraphQL, WebSocket, mock server, assertions, and collection runner behavior
-- local persistence through SQLite for workspaces, collections, requests, environments, and history
-- runtime-hardened IPC boundaries and tighter Electron trust controls around the app surface
-- automated verification across typecheck, unit/component coverage, Electron smoke coverage, packaging, and release dry-runs
-- a macOS-first release path with manifest, checksum, and go/no-go evidence generation
-
-Current release reality:
-
-- local use and dry-run release readiness are strong
-- Apple signing and notarization are still intentionally deferred for later credential setup
-- team collaboration and cloud sync remain intentionally out of scope for the current release target
-
-## Who Should Try It
-
-Nexus is a strong fit if you want:
-
-- a desktop API client that feels like a workbench instead of a scratchpad
-- one tool for HTTP plus adjacent API workflows
-- a local-first setup with no cloud account required
-- persistent request organization instead of disposable tab chaos
-- built-in validation and runner behavior before you reach for custom scripts
-- a modern Electron/Vue codebase that is already meaningfully exercised and verified
+- **Multi-Protocol** — HTTP, GraphQL, WebSocket, and local mock server workflows under one roof, switchable without changing tools
+- **Monaco-Powered Editor** — Full-featured request/response editor with syntax highlighting, autocomplete, and variable support
+- **Assertions Engine** — Write behavioral assertions on responses and run them as part of collection sequences
+- **Collection Runner** — Save requests into ordered collections and execute them in sequence; results tracked per run
+- **Code Export** — Turn any successful request into cURL, `fetch`, or Axios output in one click
+- **Persistent Local Workspace** — SQLite-backed storage; your work survives restarts and never touches a cloud sync service
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js 18+
-- `pnpm`
-- Git
+- Node.js 20+
+- pnpm 9+
 
-### Install and run
+### Installation
 
 ```bash
-git clone https://github.com/saagar210/Nexus.git
+git clone https://github.com/saagpatel/Nexus.git
 cd Nexus
 pnpm install
-pnpm start
+cp .env.example .env
 ```
 
-### Useful commands
+### Run (development)
 
 ```bash
-# Standard development mode
 pnpm start
-
-# Low-disk development mode with ephemeral Vite cache
-pnpm lean:start
-
-# Type safety
-pnpm typecheck
-
-# Unit and component tests
-pnpm test
-
-# Electron desktop smoke test
-pnpm test:e2e:smoke
-
-# Package the app locally
-pnpm package
-
-# Full macOS release dry-run without signing/notarization
-pnpm release:mac:dry-run
 ```
 
-## Verification Snapshot
+### Build (desktop app)
 
-Current verification coverage includes:
-
-- `pnpm typecheck`
-- `pnpm test`
-- `pnpm test:e2e:smoke`
-- `bash .codex/scripts/run_verify_commands.sh`
-- `pnpm package`
-- `pnpm release:mac:dry-run`
-
-Recent local evidence from the implementation pass:
-
-- 124 automated tests passing
-- Electron desktop smoke path passing
-- package flow passing
-- macOS dry-run release path producing manifest, checksums, and go/no-go evidence
-
-## Security And Architecture Notes
-
-Nexus uses a typed IPC contract between the Electron renderer and main process, and that boundary is not trusted by default.
-
-Current protections include:
-
-- runtime IPC payload validation for privileged main-process handlers
-- preload event subscription allowlisting
-- trusted renderer origin checks
-- navigation and popup denial outside the intended app surface
-- renderer sandbox enablement and tighter Electron surface controls
-
-Local secrets are resolved in the main process so sensitive environment values do not need to live directly inside renderer-side UI logic.
-
-## Stack
-
-- Electron 40
-- Vue 3
-- TypeScript
-- Pinia
-- Tailwind CSS 4
-- Monaco Editor
-- SQLite via `better-sqlite3`
-- `undici` for HTTP execution
-- `ws` for WebSocket workflows
-- Vitest + Vue Test Utils + Playwright Electron smoke coverage
-- Electron Forge + Vite
-
-## Project Layout
-
-```text
-Nexus/
-├── electron/                  # Main process, preload bridge, and desktop services
-├── src/                       # Vue renderer, stores, and UI
-├── shared/                    # Shared IPC contracts and types
-├── tests/                     # Unit, component, shared, and Electron smoke coverage
-├── docs/                      # Execution and release notes
-└── scripts/                   # Build, release, perf, and repo guardrail scripts
+```bash
+pnpm build:desktop
 ```
 
-## Roadmap From Here
+## Tech Stack
 
-The biggest remaining release step is operational rather than product-functional:
+| Layer | Technology |
+|-------|------------|
+| Desktop shell | Electron + Electron Forge |
+| Frontend | Vue 3 + TypeScript + Vite |
+| Editor | Monaco Editor |
+| State | Pinia |
+| Storage | SQLite (better-sqlite3) |
+| HTTP | undici |
+| UI components | Radix Vue |
 
-- Apple signing and notarization setup for a fully production-ready macOS release
+## Architecture
 
-Explicitly deferred for now:
-
-- team collaboration features
-- cloud sync and shared remote workspaces
-
-## Contributing
-
-If you want to explore the project locally, the best path is:
-
-1. install dependencies with `pnpm install`
-2. run the app with `pnpm start`
-3. validate changes with `bash .codex/scripts/run_verify_commands.sh`
-
-The repository also includes branch, commit, secret-scan, and performance guardrails to keep changes disciplined as the app moves toward a fuller release.
+Nexus is a multi-process Electron app. The main process owns the SQLite database, handles protocol connections (HTTP, WebSocket, GraphQL), and exposes an IPC surface to the renderer. The renderer runs a Vue 3 SPA with Monaco for editing and Pinia for state. The preload bridge enforces the context isolation boundary. A shared module layer keeps protocol and schema types consistent between main and renderer without duplication.
 
 ## License
 
