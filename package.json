@@ -113,7 +113,7 @@
     "better-sqlite3": "^12.6.2",
     "electron-squirrel-startup": "^1.0.1",
     "monaco-editor": "^0.55.1",
-    "nanoid": "^5.1.6",
+    "nanoid": "^5.1.7",
     "pinia": "^3.0.4",
     "radix-vue": "^1.9.17",
     "undici": "^7.24.0",
