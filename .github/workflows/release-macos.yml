@@ -9,7 +9,6 @@ on:
 
 jobs:
   branch-push:
-    if: ${{ github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     steps:
       - name: Skip release packaging
