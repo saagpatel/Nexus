@@ -82,8 +82,8 @@ importers:
         specifier: ^7.11.1
         version: 7.11.1
       '@electron-forge/maker-squirrel':
-        specifier: ^7.11.1
-        version: 7.11.1
+        specifier: ^7.11.2
+        version: 7.11.2
       '@electron-forge/maker-zip':
         specifier: ^7.11.1
         version: 7.11.1
@@ -389,6 +389,10 @@ packages:
     resolution: {integrity: sha512-yhZrCGoN6bDeiB5DHFaueZ1h84AReElEj+f0hl2Ph4UbZnO0cnLpbx+Bs+XfMLAiA+beC8muB5UDK5ysfuT9BQ==}
     engines: {node: '>= 16.4.0'}
 
+  '@electron-forge/maker-base@7.11.2':
+    resolution: {integrity: sha512-9934zYu9WVdgCYQXvtS+eL1oyLagsY8JlWhZmoK8yWTYftSAydH7jb3seVpfy6n85SYmY/yjcAy2lvOTy5dUwA==}
+    engines: {node: '>= 16.4.0'}
+
   '@electron-forge/maker-deb@7.11.1':
     resolution: {integrity: sha512-QTYiryQLYPDkq6pIfBmx0GQ6D8QatUkowH7rTlW5MnCUa0uumX0Xu7yGIjesuwW37fxT3Lv4xi+FSXMCm2eC1w==}
     engines: {node: '>= 16.4.0'}
@@ -401,8 +405,8 @@ packages:
     resolution: {integrity: sha512-iEfJPRQQyaTqk2EbUfZgulChNWvxGXeYUH0xBX/r5cj1pL4vcJXt3jLMQBVn3mk/0Ytv9UWRs8R/XuNWX6sf2w==}
     engines: {node: '>= 16.4.0'}
 
-  '@electron-forge/maker-squirrel@7.11.1':
-    resolution: {integrity: sha512-oSg7fgad6l+X0DjtRkSpMzB0AjzyDO4mb2gzM4kTodkP1ADeiMi08bxy0ZeCESqLm5+fG72cAPmEr3BAPvI1yw==}
+  '@electron-forge/maker-squirrel@7.11.2':
+    resolution: {integrity: sha512-4CILo57ZDEQH1mJxjhYCSXuv+WaU7oPq67KqiTLEUOEzmiPg9u9/z7FXE34H/Tn5aKWN3dy+ngAETzv6iERCGg==}
     engines: {node: '>= 16.4.0'}
 
   '@electron-forge/maker-zip@7.11.1':
@@ -5784,6 +5788,15 @@ snapshots:
       - bluebird
       - supports-color
 
+  '@electron-forge/maker-base@7.11.2':
+    dependencies:
+      '@electron-forge/shared-types': 7.11.2
+      fs-extra: 10.1.0
+      which: 2.0.2
+    transitivePeerDependencies:
+      - bluebird
+      - supports-color
+
   '@electron-forge/maker-deb@7.11.1':
     dependencies:
       '@electron-forge/maker-base': 7.11.1
@@ -5815,10 +5828,10 @@ snapshots:
       - bluebird
       - supports-color
 
-  '@electron-forge/maker-squirrel@7.11.1':
+  '@electron-forge/maker-squirrel@7.11.2':
     dependencies:
-      '@electron-forge/maker-base': 7.11.1
-      '@electron-forge/shared-types': 7.11.1
+      '@electron-forge/maker-base': 7.11.2
+      '@electron-forge/shared-types': 7.11.2
       fs-extra: 10.1.0
     optionalDependencies:
       electron-winstaller: 5.4.0
