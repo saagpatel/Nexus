@@ -91,8 +91,8 @@ importers:
         specifier: ^7.11.1
         version: 7.11.1
       '@electron-forge/plugin-fuses':
-        specifier: ^7.11.1
-        version: 7.11.1(@electron/fuses@1.8.0)
+        specifier: ^7.11.2
+        version: 7.11.2(@electron/fuses@1.8.0)
       '@electron-forge/plugin-vite':
         specifier: ^7.11.2
         version: 7.11.2
@@ -425,8 +425,8 @@ packages:
     resolution: {integrity: sha512-tIFzEE2+D9NnCAn/rLwSkh8H59IqN+G973JNl7xmCzquO6qa7/veitZOQFGO79Zmmgkc8R/fmiCbh7LIdLS9Tg==}
     engines: {node: '>= 16.4.0'}
 
-  '@electron-forge/plugin-fuses@7.11.1':
-    resolution: {integrity: sha512-Td517mHf+RjQAayFDM2kKb7NaGdRXrZfPbc7KOHlGbXthp5YTkFu2cCZGWokiqt1y1wsFaAodULhqBIg7vbbbw==}
+  '@electron-forge/plugin-fuses@7.11.2':
+    resolution: {integrity: sha512-Y65MwTmYY0ytwtUy+u9M77rEe8MeMdRR+V2IsjAozIzAVp/38NJXfF7+AqlqE9M/fDENjPuwKnrg2IOj9P1TRg==}
     engines: {node: '>= 16.4.0'}
     peerDependencies:
       '@electron/fuses': ^1.0.0
@@ -5668,7 +5668,7 @@ snapshots:
     dependencies:
       '@simple-libs/child-process-utils': 1.0.2
       '@simple-libs/stream-utils': 1.2.0
-      semver: 7.8.1
+      semver: 7.8.4
     optionalDependencies:
       conventional-commits-parser: 6.4.0
 
@@ -5872,10 +5872,10 @@ snapshots:
       - bluebird
       - supports-color
 
-  '@electron-forge/plugin-fuses@7.11.1(@electron/fuses@1.8.0)':
+  '@electron-forge/plugin-fuses@7.11.2(@electron/fuses@1.8.0)':
     dependencies:
-      '@electron-forge/plugin-base': 7.11.1
-      '@electron-forge/shared-types': 7.11.1
+      '@electron-forge/plugin-base': 7.11.2
+      '@electron-forge/shared-types': 7.11.2
       '@electron/fuses': 1.8.0
     transitivePeerDependencies:
       - bluebird
