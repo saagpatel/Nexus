@@ -12,7 +12,7 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v7
       - uses: tj-actions/changed-files@v47.0.6
         id: changed
       - uses: actions/github-script@v9.0.0
