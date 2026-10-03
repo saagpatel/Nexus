@@ -19,7 +19,7 @@ Most API clients are optimized for one request at a time. Nexus is built for the
 
 ### Prerequisites
 
-- Node.js 22 (the CI verification version)
+- Node.js 22.22.2+ within 22.x (compatible with the locked jsdom; CI selects Node 22)
 - pnpm 10.28.1 (the CI verification version)
 
 ### Installation

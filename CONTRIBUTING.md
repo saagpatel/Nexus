@@ -12,8 +12,10 @@ Thank you for your interest in contributing!
 
 ## Verification
 
-Run from the repository root with the Node 22/pnpm 10.28.1 versions used in
-`.github/workflows/quality-gates.yml`. In an isolated checkout, start with:
+Run from the repository root with the Node 22.22.2+ within 22.x and pnpm 10.28.1 (CI selects Node 22) in
+`.github/workflows/quality-gates.yml`. The locked jsdom 30.0.1 requires this
+Node 22 minimum; older Node 22 releases are unsupported. In an isolated checkout,
+start with:
 
 ```bash
 corepack pnpm@10.28.1 install --frozen-lockfile --ignore-scripts
