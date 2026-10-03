@@ -69,7 +69,7 @@
     ]
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.0",
+    "@commitlint/cli": "^21.2.2",
     "@commitlint/config-conventional": "^19.8.1",
     "@commitlint/cz-commitlint": "^19.8.1",
     "@electron-forge/cli": "^7.11.2",
@@ -82,7 +82,7 @@
     "@electron-forge/plugin-fuses": "^7.11.2",
     "@electron-forge/plugin-vite": "^7.11.2",
     "@electron/fuses": "^1.8.0",
-    "@electron/rebuild": "^4.1.0",
+    "@electron/rebuild": "^4.2.0",
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4.3.2",
@@ -96,7 +96,7 @@
     "electron": "43.0.0",
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
-    "happy-dom": "^20.10.6",
+    "happy-dom": "^20.11.6",
     "husky": "^9.1.7",
     "jsdom": "^30.0.1",
     "lint-staged": "^17.3.0",
@@ -118,7 +118,7 @@
     "pinia": "^3.0.4",
     "radix-vue": "^1.9.17",
     "undici": "^8.9.0",
-    "vue": "^3.5.39",
+    "vue": "^3.5.41",
     "ws": "^8.21.0"
   },
   "optionalDependencies": {
