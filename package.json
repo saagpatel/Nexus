@@ -21,7 +21,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e:prepare:natives": "node scripts/e2e/rebuild-native-deps.mjs",
-    "test:e2e:smoke": "pnpm e2e:prepare:natives && pnpm build:desktop && pnpm exec playwright test tests/e2e/desktop-smoke.spec.cjs",
+    "test:e2e:smoke": "pnpm e2e:prepare:natives && pnpm build:desktop && node node_modules/@playwright/test/cli.js test tests/e2e/desktop-smoke.spec.cjs",
     "typecheck": "vue-tsc --noEmit",
     "clean:heavy": "node scripts/clean-heavy.mjs",
     "clean:full": "node scripts/clean-full.mjs",
