@@ -10,9 +10,9 @@ Most API clients are optimized for one request at a time. Nexus is built for the
 
 - **Multi-Protocol** — HTTP, GraphQL, WebSocket, and local mock server workflows under one roof, switchable without changing tools
 - **Monaco-Powered Editor** — Full-featured request/response editor with syntax highlighting, autocomplete, and variable support
-- **Assertions Engine** — Write behavioral assertions on responses and run them as part of collection sequences
+- **Assertions Engine** — Configure status, body, and header assertions on the current response; collection runs use HTTP status checks
 - **Collection Runner** — Save requests into ordered collections and execute them in sequence; results tracked per run
-- **Code Export** — Turn any successful request into cURL, `fetch`, or Axios output in one click
+- **Code Export** — Turn the current configured request into cURL, `fetch`, or Axios output and copy it in one click
 - **Persistent Local Workspace** — SQLite-backed storage; your work survives restarts and never touches a cloud sync service
 
 ## Quick Start
@@ -28,8 +28,10 @@ Most API clients are optimized for one request at a time. Nexus is built for the
 git clone https://github.com/saagpatel/Nexus.git
 cd Nexus
 corepack pnpm@10.28.1 install --frozen-lockfile
-cp .env.example .env
 ```
+
+Optional environment variables are listed in `.env.example`; export them in the
+shell for the commands that read them via `process.env`.
 
 ### Run (development)
 
@@ -60,7 +62,7 @@ use disposable CI or a dedicated OS user rather than a personal workspace.
 | State | Pinia |
 | Storage | SQLite (better-sqlite3) |
 | HTTP | undici |
-| UI components | Radix Vue |
+| UI components | Custom Vue components (Radix Vue is declared but not imported) |
 
 ## Architecture
 
