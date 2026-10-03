@@ -19,15 +19,15 @@ Most API clients are optimized for one request at a time. Nexus is built for the
 
 ### Prerequisites
 
-- Node.js 20+
-- pnpm 9+
+- Node.js 22 (the CI verification version)
+- pnpm 10.28.1 (the CI verification version)
 
 ### Installation
 
 ```bash
 git clone https://github.com/saagpatel/Nexus.git
 cd Nexus
-pnpm install
+corepack pnpm@10.28.1 install --frozen-lockfile
 cp .env.example .env
 ```
 
@@ -42,6 +42,13 @@ pnpm start
 ```bash
 pnpm build:desktop
 ```
+
+## Verification
+
+See [contributor verification](CONTRIBUTING.md#verification) for a focused
+synthetic test, broader unit/type/build commands, and the separate Electron
+smoke lane. Desktop launch/smoke can open the standard application database;
+use disposable CI or a dedicated OS user rather than a personal workspace.
 
 ## Tech Stack
 
